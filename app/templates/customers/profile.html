@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.phone }}{% endblock %}
+{% block content %}
+<h1 class="h3">{{ customer.name or 'Customer' }}</h1>
+<p class="text-muted">{{ customer.phone }} · Lifetime ₹ {{ '{:,.2f}'.format(lifetime) }}
+  · Service window: {% if customer.within_service_window() %}<span class="text-success">open</span>{% else %}closed{% endif %}
+  {% if customer.last_inbound_at %}(last inbound {{ customer.last_inbound_at }} UTC){% endif %}
+</p>
+<table class="table table-sm bg-white shadow-sm">
+  <thead><tr><th>Invoice</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for inv in invoices %}
+    <tr>
+      <td><a href="{{ url_for('sales.view_invoice', invoice_id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+      <td>{{ inv.invoice_date }}</td>
+      <td>{{ inv.lines|length }}</td>
+      <td>₹ {{ '{:,.2f}'.format(inv.grand_total) }}</td>
+      <td>{{ inv.status }} / {{ inv.whatsapp_status }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="text-muted text-center">No purchases yet</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Purchases{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Supplier Bills / POs</h1>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('purchases.suppliers') }}" class="btn btn-outline-secondary">Suppliers</a>
+    <a href="{{ url_for('purchases.new_po') }}" class="btn btn-success">New Bill</a>
+  </div>
+</div>
+<table class="table table-sm bg-white shadow-sm">
+  <thead><tr><th>Bill #</th><th>Date</th><th>Supplier</th><th>Taxable</th><th>GST</th><th>Total</th><th>Payment</th></tr></thead>
+  <tbody>
+  {% for po in purchase_orders %}
+    <tr>
+      <td><a href="{{ url_for('purchases.view_po', po_id=po.id) }}">{{ po.bill_number }}</a></td>
+      <td>{{ po.po_date }}</td>
+      <td>{{ po.supplier.name }}</td>
+      <td>₹ {{ '{:,.2f}'.format(po.taxable_total) }}</td>
+      <td>₹ {{ '{:,.2f}'.format(po.cgst_total + po.sgst_total + po.igst_total) }}</td>
+      <td>₹ {{ '{:,.2f}'.format(po.grand_total) }}</td>
+      <td>{{ po.payment_status }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="text-muted text-center">No purchase orders</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

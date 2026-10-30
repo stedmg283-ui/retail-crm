@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Suppliers{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Suppliers</h1>
+  <div>
+    <a href="{{ url_for('suppliers.outstanding') }}" class="btn btn-outline-warning btn-sm">Outstanding</a>
+    <a href="{{ url_for('suppliers.orders') }}" class="btn btn-outline-secondary btn-sm">All POs</a>
+    <a href="{{ url_for('suppliers.new_order') }}" class="btn btn-outline-primary btn-sm">New PO</a>
+    <a href="{{ url_for('suppliers.new_supplier') }}" class="btn btn-primary btn-sm">Add supplier</a>
+  </div>
+</div>
+<table class="table bg-white">
+  <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>GSTIN</th><th class="text-end">Outstanding</th></tr></thead>
+  <tbody>
+  {% for s in suppliers %}
+    <tr>
+      <td>{{ s.name }}</td>
+      <td>{{ s.contact_name or '—' }}</td>
+      <td>{{ s.phone or '—' }}</td>
+      <td>{{ s.gstin or '—' }}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(s.outstanding_balance()) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

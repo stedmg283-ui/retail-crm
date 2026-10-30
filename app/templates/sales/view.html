@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h3">{{ invoice.invoice_number }}</h1>
+    <div class="text-muted">{{ invoice.invoice_date }} · {{ invoice.status }} · WA: {{ invoice.whatsapp_status }} · PDF v{{ invoice.pdf_version }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('sales.download_pdf', invoice_id=invoice.id) }}" target="_blank">PDF</a>
+    <form method="post" action="{{ url_for('sales.finalize', invoice_id=invoice.id) }}">
+      <input type="hidden" name="send" value="0">
+      <button class="btn btn-primary">Finalize</button>
+    </form>
+    <form method="post" action="{{ url_for('sales.send', invoice_id=invoice.id) }}">
+      <button class="btn btn-success">Send / Resend WhatsApp</button>
+    </form>
+  </div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-body">
+      <div><strong>Customer:</strong> {{ invoice.customer_name or '—' }}</div>
+      <div><strong>Phone:</strong>
+        {% if invoice.customer_id %}
+          <a href="{{ url_for('customers.profile', customer_id=invoice.customer_id) }}">{{ invoice.customer_phone }}</a>
+        {% else %}{{ invoice.customer_phone }}{% endif %}
+      </div>
+      <div><strong>Supply:</strong> {{ invoice.place_of_supply }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-body">
+      <div>Taxable: ₹ {{ '{:,.2f}'.format(invoice.taxable_total) }}</div>
+      <div>CGST: ₹ {{ '{:,.2f}'.format(invoice.cgst_total) }} · SGST: ₹ {{ '{:,.2f}'.format(invoice.sgst_total) }} · IGST: ₹ {{ '{:,.2f}'.format(invoice.igst_total) }}</div>
+      <div class="fs-4 fw-bold">Grand Total: ₹ {{ '{:,.2f}'.format(invoice.grand_total) }}</div>
+    </div></div>
+  </div>
+</div>
+<table class="table table-sm bg-white shadow-sm">
+  <thead><tr><th>#</th><th>Item</th><th>HSN</th><th>Qty</th><th>Rate</th><th>GST%</th><th>Taxable</th><th>Total</th></tr></thead>
+  <tbody>
+  {% for ln in invoice.lines %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ ln.item_name }}{% if ln.size %} ({{ ln.size }}){% endif %}</td>
+      <td>{{ ln.hsn }}</td>
+      <td>{{ ln.quantity }}</td>
+      <td>{{ ln.unit_price }}</td>
+      <td>{{ ln.gst_rate }}</td>
+      <td>{{ ln.taxable_amount }}</td>
+      <td>{{ ln.line_total }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sales{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Sales invoices</h1>
+  <a href="{{ url_for('sales.new_sale') }}" class="btn btn-primary">New sale</a>
+</div>
+<table class="table bg-white table-hover">
+  <thead>
+    <tr>
+      <th>Invoice</th><th>Date</th><th>Customer</th><th>Phone</th>
+      <th class="text-end">Total</th><th>WhatsApp</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for inv in invoices %}
+    <tr>
+      <td>{{ inv.invoice_number }}</td>
+      <td>{{ inv.invoice_date }}</td>
+      <td>{{ inv.customer_name or 'Walk-in' }}</td>
+      <td>{{ inv.customer_phone or '—' }}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(inv.grand_total) }}</td>
+      <td><span class="badge bg-secondary">{{ inv.whatsapp_status }}</span></td>
+      <td><a href="{{ url_for('sales.detail', invoice_id=inv.id) }}">View</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

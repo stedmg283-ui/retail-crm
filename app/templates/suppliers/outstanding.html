@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Outstanding{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Outstanding by supplier</h1>
+<table class="table bg-white">
+  <thead><tr><th>Supplier</th><th class="text-end">Balance due</th></tr></thead>
+  <tbody>
+  {% for s, bal in rows %}
+    <tr><td>{{ s.name }}</td><td class="text-end">₹ {{ '%.2f'|format(bal) }}</td></tr>
+  {% else %}
+    <tr><td colspan="2" class="text-muted">Nothing outstanding</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

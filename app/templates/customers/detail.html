@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name or customer.phone }}{% endblock %}
+{% block content %}
+<h1 class="h3">{{ customer.name or 'Customer' }}</h1>
+<p class="text-muted">{{ customer.phone }} &nbsp;·&nbsp; Lifetime ₹ {{ '%.2f'|format(lifetime) }}</p>
+<table class="table bg-white">
+  <thead><tr><th>Invoice</th><th>Date</th><th>Items</th><th class="text-end">Amount</th></tr></thead>
+  <tbody>
+  {% for inv in invoices %}
+    <tr>
+      <td><a href="{{ url_for('sales.detail', invoice_id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+      <td>{{ inv.invoice_date }}</td>
+      <td class="small">{% for ln in inv.lines %}{{ ln.item_name }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(inv.grand_total) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

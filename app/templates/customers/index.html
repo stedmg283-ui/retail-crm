@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Customers</h1>
+  <a href="{{ url_for('customers.lookup') }}" class="btn btn-outline-secondary btn-sm">Phone lookup</a>
+</div>
+<form class="mb-3" method="get">
+  <div class="input-group" style="max-width:420px">
+    <input name="q" value="{{ q }}" class="form-control" placeholder="Search name or phone">
+    <button class="btn btn-primary">Search</button>
+  </div>
+</form>
+<table class="table bg-white">
+  <thead><tr><th>Name</th><th>Phone</th><th class="text-end">Lifetime total</th><th></th></tr></thead>
+  <tbody>
+  {% for c in customers %}
+    <tr>
+      <td>{{ c.name or '—' }}</td>
+      <td>{{ c.phone }}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(c.lifetime_total()) }}</td>
+      <td><a href="{{ url_for('customers.detail', customer_id=c.id) }}">History</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}PO {{ po.bill_number }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Bill {{ po.bill_number }}</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('suppliers.order_pdf', po_id=po.id) }}" target="_blank">PDF</a>
+</div>
+<p><b>Supplier:</b> {{ po.supplier.name }} &nbsp; <b>Date:</b> {{ po.po_date }}
+  &nbsp; <span class="badge bg-secondary">{{ po.payment_status }}</span></p>
+<table class="table bg-white">
+  <thead><tr><th>Item</th><th class="text-end">Qty</th><th class="text-end">Unit</th><th class="text-end">Total</th></tr></thead>
+  <tbody>
+  {% for ln in po.lines %}
+    <tr>
+      <td>{{ ln.item_name }}</td>
+      <td class="text-end">{{ ln.quantity }}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(ln.unit_cost) }}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(ln.line_total()) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr><th colspan="3" class="text-end">Subtotal</th><th class="text-end">₹ {{ '%.2f'|format(po.subtotal()) }}</th></tr>
+    <tr><th colspan="3" class="text-end">Paid</th><th class="text-end">₹ {{ '%.2f'|format(po.amount_paid()) }}</th></tr>
+    <tr><th colspan="3" class="text-end">Balance</th><th class="text-end">₹ {{ '%.2f'|format(po.balance_due()) }}</th></tr>
+  </tfoot>
+</table>
+
+<div class="card p-3 col-md-6">
+  <h2 class="h6">Record payment</h2>
+  <form method="post" action="{{ url_for('suppliers.record_payment', po_id=po.id) }}" class="row g-2">
+    <div class="col-4"><input name="amount" type="number" step="0.01" class="form-control" placeholder="Amount" required></div>
+    <div class="col-3"><input name="paid_on" type="date" class="form-control"></div>
+    <div class="col-3"><input name="method" class="form-control" value="UPI"></div>
+    <div class="col-2"><button class="btn btn-primary w-100">Pay</button></div>
+  </form>
+</div>
+{% endblock %}

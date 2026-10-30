@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Attendance — {{ day }}</h1>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('attendance.employees') }}" class="btn btn-outline-secondary">Employees</a>
+    <form method="get" class="d-flex gap-2">
+      <input type="date" name="date" class="form-control" value="{{ day.isoformat() }}">
+      <button class="btn btn-primary">Go</button>
+    </form>
+  </div>
+</div>
+{% for emp in employees %}
+  {% set att = records.get(emp.id) %}
+  {% set fid = 'att-' ~ emp.id %}
+  <form method="post" action="{{ url_for('attendance.check') }}" id="{{ fid }}" class="d-none">
+    <input type="hidden" name="employee_id" value="{{ emp.id }}">
+    <input type="hidden" name="work_date" value="{{ day.isoformat() }}">
+  </form>
+{% endfor %}
+<table class="table table-sm bg-white shadow-sm align-middle">
+  <thead><tr><th>Employee</th><th>Shift</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Late (min)</th><th>Hours</th><th></th></tr></thead>
+  <tbody>
+  {% for emp in employees %}
+    {% set att = records.get(emp.id) %}
+    {% set fid = 'att-' ~ emp.id %}
+    <tr>
+      <td>{{ emp.name }} <small class="text-muted">{{ emp.role }}</small></td>
+      <td>{{ emp.shift }}{% if emp.shift_start %} ({{ emp.shift_start.strftime('%H:%M') }}–{{ emp.shift_end.strftime('%H:%M') if emp.shift_end else '?' }}){% endif %}</td>
+      <td><input form="{{ fid }}" name="check_in" type="time" class="form-control form-control-sm" value="{{ att.check_in.strftime('%H:%M') if att and att.check_in else (emp.shift_start.strftime('%H:%M') if emp.shift_start else '10:00') }}"></td>
+      <td><input form="{{ fid }}" name="check_out" type="time" class="form-control form-control-sm" value="{{ att.check_out.strftime('%H:%M') if att and att.check_out else (emp.shift_end.strftime('%H:%M') if emp.shift_end else '19:00') }}"></td>
+      <td>
+        <select form="{{ fid }}" name="status" class="form-select form-select-sm">
+          {% for s in ['present','absent','half','leave'] %}
+            <option value="{{ s }}" {% if att and att.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input form="{{ fid }}" name="late_minutes" type="number" class="form-control form-control-sm" value="{{ att.late_minutes if att else 0 }}"></td>
+      <td>{% if att %}{{ att.hours_worked }}{% else %}—{% endif %}</td>
+      <td><button form="{{ fid }}" class="btn btn-sm btn-primary">Save</button></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8">No employees — <a href="{{ url_for('attendance.employees') }}">add some</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

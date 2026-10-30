@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Customer lookup{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Customer lookup</h1>
+<form method="get" class="mb-4" style="max-width:360px">
+  <div class="input-group">
+    <input name="phone" class="form-control" placeholder="Phone number" value="{{ phone or '' }}">
+    <button class="btn btn-primary">Lookup</button>
+  </div>
+</form>
+{% if phone and not customer %}
+  <div class="alert alert-warning">No customer found for {{ phone }}</div>
+{% elif customer %}
+  <div class="card p-3">
+    <h2 class="h5">{{ customer.name or 'Unnamed' }}</h2>
+    <p>{{ customer.phone }} · Lifetime ₹ {{ '%.2f'|format(customer.lifetime_total()) }}</p>
+    <a href="{{ url_for('customers.detail', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">Full history</a>
+  </div>
+{% endif %}
+{% endblock %}

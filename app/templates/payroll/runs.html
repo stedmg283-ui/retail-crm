@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Payroll Runs{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Payroll Runs</h1>
+<table class="table table-sm bg-white shadow-sm">
+  <thead><tr><th>ID</th><th>Type</th><th>Period</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for r in runs %}
+    <tr>
+      <td><a href="{{ url_for('payroll.view_run', run_id=r.id) }}">#{{ r.id }}</a></td>
+      <td>{{ r.period_type }}</td>
+      <td>{{ r.period_start }} → {{ r.period_end }}</td>
+      <td>₹ {{ '{:,.2f}'.format(r.gross_total) }}</td>
+      <td>₹ {{ '{:,.2f}'.format(r.deductions_total) }}</td>
+      <td>₹ {{ '{:,.2f}'.format(r.net_total) }}</td>
+      <td>{{ r.status }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,16 @@
+.env
+*.db
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+invoices/*.pdf
+invoices/sent/*
+!invoices/sent/.gitkeep
+!invoices/.gitkeep
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.DS_Store

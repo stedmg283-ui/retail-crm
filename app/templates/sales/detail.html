@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">{{ invoice.invoice_number }}</h1>
+  <div>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('sales.pdf', invoice_id=invoice.id) }}" target="_blank">PDF</a>
+    <form method="post" action="{{ url_for('sales.send_now', invoice_id=invoice.id) }}" class="d-inline">
+      <button class="btn btn-success btn-sm" {% if not invoice.customer_phone %}disabled{% endif %}>Send now (WhatsApp)</button>
+    </form>
+  </div>
+</div>
+<p>
+  <b>Date:</b> {{ invoice.invoice_date }} &nbsp;
+  <b>Customer:</b> {{ invoice.customer_name or 'Walk-in' }}
+  ({{ invoice.customer_phone or 'no phone' }}) &nbsp;
+  <span class="badge bg-secondary">WA: {{ invoice.whatsapp_status }}</span>
+</p>
+<table class="table bg-white">
+  <thead><tr><th>Item</th><th>Size</th><th>HSN</th><th class="text-end">Qty</th><th class="text-end">Rate</th><th class="text-end">GST%</th><th class="text-end">Total</th></tr></thead>
+  <tbody>
+  {% for ln in invoice.lines %}
+    <tr>
+      <td>{{ ln.item_name }}</td>
+      <td>{{ ln.size or '—' }}</td>
+      <td>{{ ln.hsn or '—' }}</td>
+      <td class="text-end">{{ ln.quantity }}</td>
+      <td class="text-end">{{ '%.2f'|format(ln.unit_price) }}</td>
+      <td class="text-end">{{ ln.gst_rate }}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(ln.line_total) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr><th colspan="6" class="text-end">Taxable</th><th class="text-end">₹ {{ '%.2f'|format(invoice.taxable_total) }}</th></tr>
+    <tr><th colspan="6" class="text-end">CGST</th><th class="text-end">₹ {{ '%.2f'|format(invoice.cgst_total) }}</th></tr>
+    <tr><th colspan="6" class="text-end">SGST</th><th class="text-end">₹ {{ '%.2f'|format(invoice.sgst_total) }}</th></tr>
+    <tr><th colspan="6" class="text-end">IGST</th><th class="text-end">₹ {{ '%.2f'|format(invoice.igst_total) }}</th></tr>
+    <tr><th colspan="6" class="text-end">Discount</th><th class="text-end">₹ {{ '%.2f'|format(invoice.discount_amount) }}</th></tr>
+    <tr><th colspan="6" class="text-end">Grand total</th><th class="text-end">₹ {{ '%.2f'|format(invoice.grand_total) }}</th></tr>
+  </tfoot>
+</table>
+{% if invoice.whatsapp_messages.count() %}
+<h2 class="h6 mt-4">WhatsApp log</h2>
+<ul class="list-group">
+  {% for m in invoice.whatsapp_messages %}
+  <li class="list-group-item small">
+    {{ m.created_at }} — {{ m.status }}
+    {% if m.wamid %} ({{ m.wamid }}){% endif %}
+    {% if m.error_message %}<br><span class="text-danger">{{ m.error_message }}</span>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

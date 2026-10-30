@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Sales Invoices</h1>
+  <a href="{{ url_for('sales.new_invoice') }}" class="btn btn-success">New Sale</a>
+</div>
+<table class="table table-hover table-sm bg-white shadow-sm">
+  <thead><tr><th>Number</th><th>Date</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>WhatsApp</th></tr></thead>
+  <tbody>
+  {% for inv in invoices %}
+    <tr>
+      <td><a href="{{ url_for('sales.view_invoice', invoice_id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+      <td>{{ inv.invoice_date }}</td>
+      <td>{{ inv.customer_name or '—' }}</td>
+      <td>
+        {% if inv.customer_id %}
+          <a href="{{ url_for('customers.profile', customer_id=inv.customer_id) }}">{{ inv.customer_phone }}</a>
+        {% else %}{{ inv.customer_phone or '—' }}{% endif %}
+      </td>
+      <td>₹ {{ '{:,.2f}'.format(inv.grand_total) }}</td>
+      <td>{{ inv.status }}</td>
+      <td>{{ inv.whatsapp_status }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

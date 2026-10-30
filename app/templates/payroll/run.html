@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Payroll Run #{{ run.id }}{% endblock %}
+{% block content %}
+<h1 class="h3">Payroll Run #{{ run.id }}</h1>
+<p>{{ run.period_type }} · {{ run.period_start }} → {{ run.period_end }} · {{ run.status }}</p>
+<table class="table table-sm bg-white shadow-sm">
+  <thead><tr><th>Employee</th><th>Days</th><th>Reg</th><th>OT</th><th>Gross</th><th>Ded</th><th>Net</th></tr></thead>
+  <tbody>
+  {% for ln in run.lines %}
+    <tr>
+      <td>{{ ln.employee.name }}</td>
+      <td>{{ ln.days_worked }}</td>
+      <td>{{ ln.regular_hours }}</td>
+      <td>{{ ln.ot_hours }}</td>
+      <td>₹ {{ ln.gross_pay }}</td>
+      <td>₹ {{ ln.deductions }}</td>
+      <td>₹ {{ ln.net_pay }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr class="fw-bold">
+      <td colspan="4">Totals</td>
+      <td>₹ {{ run.gross_total }}</td>
+      <td>₹ {{ run.deductions_total }}</td>
+      <td>₹ {{ run.net_total }}</td>
+    </tr>
+  </tfoot>
+</table>
+{% endblock %}

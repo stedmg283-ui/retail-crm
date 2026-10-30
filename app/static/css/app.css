@@ -1,0 +1,7 @@
+.bg-navy { background-color: #1a365d !important; }
+.stat-card { border-left: 4px solid #1a365d; }
+.table-sm td, .table-sm th { vertical-align: middle; }
+.badge-pending { background: #ed8936; }
+.badge-sent { background: #38a169; }
+.badge-failed { background: #e53e3e; }
+.badge-draft { background: #718096; }

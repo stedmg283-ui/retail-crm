@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Purchase orders{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Purchase orders</h1>
+  <a href="{{ url_for('suppliers.new_order') }}" class="btn btn-primary btn-sm">New PO</a>
+</div>
+<table class="table bg-white">
+  <thead><tr><th>Bill #</th><th>Date</th><th>Supplier</th><th>Status</th><th class="text-end">Total</th><th class="text-end">Balance</th><th></th></tr></thead>
+  <tbody>
+  {% for po in orders %}
+    <tr>
+      <td>{{ po.bill_number }}</td>
+      <td>{{ po.po_date }}</td>
+      <td>{{ po.supplier.name }}</td>
+      <td><span class="badge bg-{{ 'success' if po.payment_status=='paid' else ('warning' if po.payment_status=='partial' else 'danger') }}">{{ po.payment_status }}</span></td>
+      <td class="text-end">₹ {{ '%.2f'|format(po.subtotal()) }}</td>
+      <td class="text-end">₹ {{ '%.2f'|format(po.balance_due()) }}</td>
+      <td><a href="{{ url_for('suppliers.order_detail', po_id=po.id) }}">View</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

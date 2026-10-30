@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Payroll{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+  <h1 class="h3">Payroll — {{ period_label }}</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-sm {{ 'btn-primary' if view=='daily' else 'btn-outline-primary' }}" href="?view=daily">Daily</a>
+    <a class="btn btn-sm {{ 'btn-primary' if view=='weekly' else 'btn-outline-primary' }}" href="?view=weekly">Weekly</a>
+    <a class="btn btn-sm {{ 'btn-primary' if view=='monthly' else 'btn-outline-primary' }}" href="?view=monthly">Monthly</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('payroll.deductions') }}">Deductions</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('payroll.list_runs') }}">Runs</a>
+  </div>
+</div>
+<table class="table table-sm bg-white shadow-sm">
+  <thead>
+    <tr><th>Employee</th><th>Days</th><th>Reg hrs</th><th>OT hrs</th><th>Gross</th><th>Deductions</th><th>Net</th></tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.employee.name }}</td>
+      <td>{{ r.days|length }}</td>
+      <td>{{ r.total_regular_hours }}</td>
+      <td>{{ r.total_ot_hours }}</td>
+      <td>₹ {{ '{:,.2f}'.format(r.gross_pay) }}</td>
+      <td>₹ {{ '{:,.2f}'.format(r.deductions) }}</td>
+      <td class="fw-semibold">₹ {{ '{:,.2f}'.format(r.net_pay) }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="text-muted text-center">No data</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="{{ url_for('payroll.run') }}" class="d-flex gap-2 align-items-end">
+  <input type="hidden" name="period_type" value="{{ view }}">
+  <div><label class="form-label small">Start</label><input type="date" name="period_start" class="form-control" value="{{ start.isoformat() }}"></div>
+  <div><label class="form-label small">End</label><input type="date" name="period_end" class="form-control" value="{{ end.isoformat() }}"></div>
+  <button class="btn btn-success">Snapshot Payroll Run</button>
+</form>
+{% endblock %}

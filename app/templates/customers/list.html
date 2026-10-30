@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Customers{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h1 class="h3">Customers</h1>
+  <form class="d-flex gap-2" method="get">
+    <input name="q" value="{{ q }}" class="form-control" placeholder="Search phone or name">
+    <button class="btn btn-primary">Search</button>
+  </form>
+</div>
+<table class="table table-hover table-sm bg-white shadow-sm">
+  <thead><tr><th>Phone</th><th>Name</th><th>Lifetime window</th><th>Lifetime in</th><th>Lifetime</th></tr></thead>
+  <tbody>
+  {% for c in customers %}
+    <tr>
+      <td><a href="{{ url_for('customers.profile', customer_id=c.id) }}">{{ c.phone }}</a></td>
+      <td>{{ c.name or '—' }}</td>
+      <td>{% if c.within_service_window() %}<span class="badge bg-success">open</span>{% else %}<span class="badge bg-secondary">closed</span>{% endif %}</td>
+      <td>{{ c.last_inbound_at or '—' }}</td>
+      <td>{{ c.updated_at }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="text-muted text-center">No customers yet</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

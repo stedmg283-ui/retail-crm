@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}New Sale{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">New Sale / Invoice</h1>
+<p class="text-muted">Same phone on the same day merges into one invoice (dedup). Finalize or Send when done.</p>
+<form method="post" id="sale-form">
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <label class="form-label">Customer Phone *</label>
+      <input name="phone" class="form-control" placeholder="9876543210 or +91..." required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Customer Name</label>
+      <input name="name" class="form-control" placeholder="Optional">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Supply</label>
+      <select name="place_of_supply" class="form-select">
+        <option value="intra">Intra (CGST+SGST)</option>
+        <option value="inter">Inter (IGST)</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Discount ₹</label>
+      <input name="discount_amount" type="number" step="0.01" class="form-control" value="0">
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header d-flex justify-content-between">
+      <span>Line Items</span>
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLineRow('lines','line-tpl')">+ Add row</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Item</th><th>Size</th><th>HSN</th><th>Qty</th><th>Rate</th><th>GST%</th><th></th></tr></thead>
+        <tbody id="lines">
+          <tr>
+            <td><input name="item_name[]" class="form-control form-control-sm" list="product-list" required></td>
+            <td><input name="size[]" class="form-control form-control-sm"></td>
+            <td><input name="hsn[]" class="form-control form-control-sm" value="6211"></td>
+            <td><input name="quantity[]" type="number" step="0.01" class="form-control form-control-sm" value="1"></td>
+            <td><input name="unit_price[]" type="number" step="0.01" class="form-control form-control-sm" value="0"></td>
+            <td><input name="gst_rate[]" type="number" step="0.01" class="form-control form-control-sm" value="5"></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <datalist id="product-list">
+    {% for p in products %}
+      <option value="{{ p.name }}" data-price="{{ p.unit_price }}" data-hsn="{{ p.hsn }}" data-gst="{{ p.gst_rate }}">
+    {% endfor %}
+  </datalist>
+  <template id="line-tpl">
+    <tr>
+      <td><input name="item_name[]" class="form-control form-control-sm" list="product-list"></td>
+      <td><input name="size[]" class="form-control form-control-sm"></td>
+      <td><input name="hsn[]" class="form-control form-control-sm" value="6211"></td>
+      <td><input name="quantity[]" type="number" step="0.01" class="form-control form-control-sm" value="1"></td>
+      <td><input name="unit_price[]" type="number" step="0.01" class="form-control form-control-sm" value="0"></td>
+      <td><input name="gst_rate[]" type="number" step="0.01" class="form-control form-control-sm" value="5"></td>
+      <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">×</button></td>
+    </tr>
+  </template>
+
+  <div class="mb-3">
+    <label class="form-label">Notes</label>
+    <textarea name="notes" class="form-control" rows="2"></textarea>
+  </div>
+  <div class="d-flex gap-2">
+    <button name="action" value="save" class="btn btn-outline-secondary">Save / Merge (no send)</button>
+    <button name="action" value="finalize" class="btn btn-primary">Finalize PDF</button>
+    <button name="action" value="finalize" class="btn btn-success" onclick="this.form.send_now.value='1'">Finalize + Send WhatsApp</button>
+    <input type="hidden" name="send_now" value="0">
+  </div>
+</form>
+{% endblock %}

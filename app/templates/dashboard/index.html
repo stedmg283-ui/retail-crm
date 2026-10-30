@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ shop_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Daily Sales Tally</h1>
+  <form class="d-flex gap-2" method="get">
+    <input type="date" name="date" class="form-control" value="{{ day.isoformat() }}">
+    <button class="btn btn-primary">Go</button>
+  </form>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card stat-card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Total Sales</div>
+        <div class="fs-3 fw-bold">₹ {{ '{:,.2f}'.format(total_sales) }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Transactions</div>
+        <div class="fs-3 fw-bold">{{ txn_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card stat-card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Date</div>
+        <div class="fs-3 fw-bold">{{ day.strftime('%d %b %Y') }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">Top Items</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Item</th><th>Qty</th><th>Revenue</th></tr></thead>
+          <tbody>
+          {% for t in top_items %}
+            <tr>
+              <td>{{ t.name }}</td>
+              <td>{{ t.qty }}</td>
+              <td>₹ {{ '{:,.2f}'.format(t.revenue) }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="3" class="text-muted text-center py-3">No sales yet</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between">
+        <span class="fw-semibold">Invoices</span>
+        <a href="{{ url_for('sales.new_invoice') }}" class="btn btn-sm btn-success">New Sale</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>#</th><th>Customer</th><th>Phone</th><th>Total</th><th>WA</th></tr></thead>
+          <tbody>
+          {% for inv in invoices %}
+            <tr>
+              <td><a href="{{ url_for('sales.view_invoice', invoice_id=inv.id) }}">{{ inv.invoice_number }}</a></td>
+              <td>{{ inv.customer_name or '—' }}</td>
+              <td>{{ inv.customer_phone or '—' }}</td>
+              <td>₹ {{ '{:,.2f}'.format(inv.grand_total) }}</td>
+              <td><span class="badge text-bg-secondary">{{ inv.whatsapp_status }}</span></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="text-muted text-center py-3">No invoices</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
