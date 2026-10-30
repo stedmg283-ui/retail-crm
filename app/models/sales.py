@@ -27,7 +27,7 @@ class Invoice(db.Model):
     grand_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     # draft | finalized | sent | void
     status = db.Column(db.String(20), nullable=False, default="draft", index=True)
-    # pending | sent | skipped | failed | queued
+    # pending | sent | simulated | skipped | failed | queued
     whatsapp_status = db.Column(db.String(20), nullable=False, default="pending")
     # Idempotency key for WhatsApp send (invoice_id + pdf_version)
     pdf_version = db.Column(db.Integer, nullable=False, default=1)
@@ -135,7 +135,7 @@ class WhatsAppMessage(db.Model):
     template_name = db.Column(db.String(80), nullable=True)
     wamid = db.Column(db.String(120), nullable=True, index=True)
     media_id = db.Column(db.String(120), nullable=True)
-    # queued|sent|delivered|read|failed|dry_run|received
+    # queued|sent|delivered|read|failed|simulated|received
     status = db.Column(db.String(40), nullable=False, default="queued")
     body_preview = db.Column(db.String(500), nullable=True)
     response_json = db.Column(db.Text, nullable=True)

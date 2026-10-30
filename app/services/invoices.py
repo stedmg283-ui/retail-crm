@@ -126,7 +126,7 @@ def create_or_merge_sale(
         generate_invoice_pdf(existing, dest_path=pdf_path)
         existing.pdf_path = str(pdf_path)
         # Keep pending if never sent; leave sent alone (manual re-send if needed)
-        if existing.whatsapp_status == "sent":
+        if existing.whatsapp_status in ("sent", "simulated"):
             existing.whatsapp_status = "pending"  # content changed; queue for send-pending / Send now
         db.session.commit()
         return existing, True

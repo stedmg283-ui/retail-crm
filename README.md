@@ -45,9 +45,12 @@ See `.env.example`. Important keys:
 | `WHATSAPP_API_VERSION` | Default `v20.0` |
 | `SEND_ON_CREATE` | `false` recommended |
 | `PENDING_SEND_DEBOUNCE_MINUTES` | Default `30` |
-| `OWNER_EMAIL` / `SMTP_*` | Optional invoice BCC to owner |
+| `OWNER_EMAIL` | Ledger BCC recipient (e.g. `stedmg283@gmail.com`) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USE_TLS` | Gmail defaults: `smtp.gmail.com`, `587`, `true` |
+| `SMTP_USER` / `SMTP_FROM` | Gmail address / `Rabya Collection <stedmg283@gmail.com>` |
+| `SMTP_PASSWORD` | **Gmail App Password** (16 chars). Leave blank to skip BCC safely — app will not crash; it logs `SMTP_PASSWORD missing` and flashes a warning |
 
-**DRY_RUN:** if `WHATSAPP_TOKEN` or `WHATSAPP_PHONE_NUMBER_ID` is empty, sends are simulated — PDF still saved under `invoices/sent/` and a `whatsapp_messages` row with `status=dry_run` is logged.
+**DRY_RUN / simulated:** if `WHATSAPP_TOKEN` or `WHATSAPP_PHONE_NUMBER_ID` is empty, sends are simulated — PDF still saved under `invoices/sent/` and a `whatsapp_messages` row with `status=simulated` is logged. Simulated rows do **not** block a later real send for the same invoice version.
 
 ## Same-day dedup & WhatsApp send policy
 
@@ -123,6 +126,15 @@ retail-crm/
   requirements.txt
   .env.example
 ```
+
+
+## Owner email BCC (ledger copy)
+
+Every finalize/resend attempts to email the invoice PDF to `OWNER_EMAIL`.
+
+1. Set `OWNER_EMAIL`, `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_TLS=true`, `SMTP_USER`, and `SMTP_FROM` in `.env` (see `.env.example`).
+2. Create a Gmail **App Password** at https://myaccount.google.com/apppasswords (2-Step Verification required) and paste it into `SMTP_PASSWORD`.
+3. If `SMTP_PASSWORD` is blank (or SMTP is otherwise incomplete), the app **skips** BCC with a clear log/flash — it does not crash.
 
 ## Deployment checklist
 

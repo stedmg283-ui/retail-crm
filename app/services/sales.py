@@ -5,7 +5,7 @@ import logging
 from datetime import date, datetime
 from decimal import Decimal
 
-from flask import current_app
+from flask import current_app, flash, has_request_context
 
 from app.extensions import db
 from app.models.customer import Customer
@@ -143,6 +143,25 @@ def create_or_merge_invoice(
     return inv, False
 
 
+
+def _report_bcc_result(invoice: Invoice, bcc: dict) -> None:
+    """Log BCC outcome and flash a warning in request context when skipped/failed."""
+    invoice_no = invoice.invoice_number
+    if not bcc.get("ok"):
+        err = bcc.get("error") or "unknown error"
+        logger.error("BCC failed for %s: %s", invoice_no, err)
+        if has_request_context():
+            flash(f"Owner email copy failed for {invoice_no}: {err}", "warning")
+        return
+    if bcc.get("skipped") or bcc.get("dry_run"):
+        reason = bcc.get("skipped") or "SMTP not configured"
+        logger.info("BCC skipped for %s: %s (to=%s)", invoice_no, reason, bcc.get("to"))
+        if has_request_context():
+            flash(f"Owner email copy skipped: {reason}.", "warning")
+        return
+    logger.info("BCC sent for %s to %s", invoice_no, bcc.get("to"))
+
+
 def finalize_invoice(invoice: Invoice, send: bool = True) -> Invoice:
     """
     Mark invoice finalized, generate PDF, optionally WhatsApp + BCC owner email.
@@ -161,7 +180,8 @@ def finalize_invoice(invoice: Invoice, send: bool = True) -> Invoice:
     db.session.commit()
 
     # Always BCC owner for ledger (even if WhatsApp skipped)
-    send_invoice_bcc(invoice, pdf_path)
+    bcc = send_invoice_bcc(invoice, pdf_path)
+    _report_bcc_result(invoice, bcc)
 
     if send and invoice.customer_phone:
         send_invoice_whatsapp(invoice, pdf_path)
@@ -179,7 +199,8 @@ def resend_invoice(invoice: Invoice) -> Invoice:
     pdf_path = generate_invoice_pdf(invoice)
     invoice.pdf_path = pdf_path
     db.session.commit()
-    send_invoice_bcc(invoice, pdf_path)
+    bcc = send_invoice_bcc(invoice, pdf_path)
+    _report_bcc_result(invoice, bcc)
     if invoice.customer_phone:
         send_invoice_whatsapp(invoice, pdf_path)
     return invoice

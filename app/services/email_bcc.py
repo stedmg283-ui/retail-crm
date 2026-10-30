@@ -27,11 +27,35 @@ def send_invoice_bcc(invoice, pdf_path: str) -> dict:
 
     if not owner:
         logger.info("OWNER_EMAIL not set — skipping BCC for %s", invoice.invoice_number)
-        return {"ok": True, "dry_run": True, "error": None, "skipped": "no_owner_email"}
+        return {"ok": True, "dry_run": True, "error": None, "skipped": "OWNER_EMAIL not set"}
 
     if not smtp_host or not smtp_from:
-        logger.info("SMTP not configured — dry-run BCC for %s to %s", invoice.invoice_number, owner)
-        return {"ok": True, "dry_run": True, "error": None, "to": owner}
+        logger.info(
+            "SMTP not configured — skipping BCC for %s to %s",
+            invoice.invoice_number,
+            owner,
+        )
+        return {
+            "ok": True,
+            "dry_run": True,
+            "error": None,
+            "skipped": "SMTP not configured",
+            "to": owner,
+        }
+
+    if not smtp_pass:
+        logger.info(
+            "SMTP_PASSWORD missing — skipping BCC for %s to %s",
+            invoice.invoice_number,
+            owner,
+        )
+        return {
+            "ok": True,
+            "dry_run": True,
+            "error": None,
+            "skipped": "SMTP_PASSWORD missing",
+            "to": owner,
+        }
 
     msg = EmailMessage()
     shop = current_app.config.get("SHOP_NAME", "Shop")
@@ -61,6 +85,7 @@ def send_invoice_bcc(invoice, pdf_path: str) -> dict:
             if smtp_user and smtp_pass:
                 server.login(smtp_user, smtp_pass)
             server.send_message(msg)
+        logger.info("BCC email sent for %s to %s", invoice.invoice_number, owner)
         return {"ok": True, "dry_run": False, "error": None, "to": owner}
     except Exception as exc:
         logger.exception("SMTP BCC failed for %s", invoice.invoice_number)

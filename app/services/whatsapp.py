@@ -53,7 +53,7 @@ def within_service_window(customer: Customer | None, phone: str | None = None) -
 def upload_media(pdf_path: str) -> str | None:
     """Upload PDF to WhatsApp media endpoint; return media_id or None in dry-run."""
     if not _configured():
-        logger.info("WhatsApp dry-run: skip media upload for %s", pdf_path)
+        logger.info("WhatsApp simulated: skip media upload for %s", pdf_path)
         return f"dry_run_media_{Path(pdf_path).stem}"
 
     ver = current_app.config.get("WHATSAPP_API_VERSION", "v20.0")
@@ -94,7 +94,7 @@ def send_document_freeform(
         payload["document"]["caption"] = caption[:1024]
 
     if not _configured():
-        logger.info("WhatsApp dry-run freeform document to %s", to)
+        logger.info("WhatsApp simulated freeform document to %s", to)
         return {"messages": [{"id": f"dry_run_wamid_{to}"}], "dry_run": True}
 
     url = f"{_api_base()}/messages"
@@ -146,7 +146,7 @@ def send_document_template(
     }
 
     if not _configured():
-        logger.info("WhatsApp dry-run template %s to %s", template_name, to)
+        logger.info("WhatsApp simulated template %s to %s", template_name, to)
         return {
             "messages": [{"id": f"dry_run_wamid_tpl_{to}"}],
             "dry_run": True,
@@ -169,9 +169,12 @@ def send_invoice_whatsapp(invoice: Invoice, pdf_path: str) -> WhatsAppMessage:
         raise ValueError("Invoice has no customer phone")
 
     idem = f"inv-{invoice.id}-v{invoice.pdf_version}"
+    # Only real delivery statuses block a resend. simulated/dry_run/failed/queued
+    # reuse the same idempotency_key row (unique constraint) and try again.
+    SUCCESS_STATUSES = ("sent", "delivered", "read")
     existing = WhatsAppMessage.query.filter_by(idempotency_key=idem).first()
-    if existing and existing.status in ("sent", "delivered", "read", "dry_run", "queued"):
-        logger.info("Idempotent skip for %s", idem)
+    if existing and existing.status in SUCCESS_STATUSES:
+        logger.info("Idempotent skip for %s (status=%s)", idem, existing.status)
         return existing
 
     customer = invoice.customer
@@ -180,27 +183,51 @@ def send_invoice_whatsapp(invoice: Invoice, pdf_path: str) -> WhatsAppMessage:
 
     use_freeform = within_service_window(customer, phone)
     media_id = upload_media(pdf_path)
+    logger.info(
+        "WhatsApp media ready for invoice %s: media_id=%s configured=%s",
+        invoice.invoice_number,
+        media_id,
+        _configured(),
+    )
     filename = Path(pdf_path).name
     caption = (
         f"Invoice {invoice.invoice_number} from {current_app.config['SHOP_NAME']}. "
         f"Total: ₹{invoice.grand_total}"
     )
 
-    msg = WhatsAppMessage(
-        invoice_id=invoice.id,
-        customer_id=customer.id if customer else None,
-        direction="outbound",
-        to_phone=normalize_phone(phone) or phone,
-        message_type="freeform" if use_freeform else "template",
-        template_name=None
-        if use_freeform
-        else current_app.config.get("WHATSAPP_TEMPLATE_NAME"),
-        media_id=media_id,
-        status="queued",
-        idempotency_key=idem,
-        pdf_saved_path=pdf_path,
+    to_phone = normalize_phone(phone) or phone
+    template_name = (
+        None if use_freeform else current_app.config.get("WHATSAPP_TEMPLATE_NAME")
     )
-    db.session.add(msg)
+    if existing:
+        msg = existing
+        msg.invoice_id = invoice.id
+        msg.customer_id = customer.id if customer else None
+        msg.direction = "outbound"
+        msg.to_phone = to_phone
+        msg.message_type = "freeform" if use_freeform else "template"
+        msg.template_name = template_name
+        msg.media_id = media_id
+        msg.status = "queued"
+        msg.pdf_saved_path = pdf_path
+        msg.error_message = None
+        msg.response_json = None
+        msg.wamid = None
+        msg.updated_at = datetime.utcnow()
+    else:
+        msg = WhatsAppMessage(
+            invoice_id=invoice.id,
+            customer_id=customer.id if customer else None,
+            direction="outbound",
+            to_phone=to_phone,
+            message_type="freeform" if use_freeform else "template",
+            template_name=template_name,
+            media_id=media_id,
+            status="queued",
+            idempotency_key=idem,
+            pdf_saved_path=pdf_path,
+        )
+        db.session.add(msg)
     db.session.flush()
 
     try:
@@ -222,10 +249,12 @@ def send_invoice_whatsapp(invoice: Invoice, pdf_path: str) -> WhatsAppMessage:
         if result.get("messages"):
             wamid = result["messages"][0].get("id")
         msg.wamid = wamid
-        msg.status = "dry_run" if result.get("dry_run") else "sent"
-        invoice.whatsapp_status = "sent"
+        is_simulated = bool(result.get("dry_run"))
+        msg.status = "simulated" if is_simulated else "sent"
+        invoice.whatsapp_status = "simulated" if is_simulated else "sent"
         invoice.last_sent_pdf_version = invoice.pdf_version
-        invoice.status = "sent" if invoice.status == "finalized" else invoice.status
+        if not is_simulated and invoice.status == "finalized":
+            invoice.status = "sent"
 
         # Archive a copy under invoices/sent/
         sent_dir = Path(current_app.config["SENT_INVOICES_DIR"])
@@ -234,6 +263,16 @@ def send_invoice_whatsapp(invoice: Invoice, pdf_path: str) -> WhatsAppMessage:
         if Path(pdf_path).resolve() != dest.resolve():
             shutil.copy2(pdf_path, dest)
             msg.pdf_saved_path = str(dest)
+
+        logger.info(
+            "WhatsApp %s invoice %s to %s type=%s status=%s wamid=%s",
+            "simulated" if is_simulated else "sent",
+            invoice.invoice_number,
+            msg.to_phone,
+            msg.message_type,
+            msg.status,
+            msg.wamid,
+        )
     except Exception as exc:
         logger.exception("WhatsApp send failed for invoice %s", invoice.invoice_number)
         msg.status = "failed"

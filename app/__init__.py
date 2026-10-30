@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import logging
 import os
 from pathlib import Path
 
@@ -58,6 +59,16 @@ def create_app(config_overrides: dict | None = None) -> Flask:
     )
     if config_overrides:
         flask_app.config.update(config_overrides)
+
+    # INFO logs for WhatsApp / BCC go to stdout/stderr (picked up by nohup → server.log).
+    # Never configure handlers that would print tokens; services already redact.
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        force=True,
+    )
+    logging.getLogger("werkzeug").setLevel(logging.INFO)
+    logging.getLogger("app").setLevel(logging.INFO)
 
     Path(flask_app.config["INVOICES_DIR"]).mkdir(parents=True, exist_ok=True)
     Path(flask_app.config["SENT_INVOICES_DIR"]).mkdir(parents=True, exist_ok=True)
