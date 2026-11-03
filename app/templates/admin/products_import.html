@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Import products — {{ shop_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Import product catalog</h1>
+<p class="text-muted">Upload a .zip with CSV / XLSX / JSON product sheets and optional photos.
+Photos are matched by SKU or filename and stored under <code>static/products/&lt;sku&gt;/</code>.</p>
+
+<form method="post" enctype="multipart/form-data" class="card shadow-sm p-4 mb-4" style="max-width:640px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="mb-3">
+    <label class="form-label" for="catalog_zip">Catalog zip</label>
+    <input class="form-control" type="file" id="catalog_zip" name="catalog_zip" accept=".zip" required>
+  </div>
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" value="1" id="goto_top_sellers" name="goto_top_sellers" checked>
+    <label class="form-check-label" for="goto_top_sellers">Open top-sellers after import</label>
+  </div>
+  <button class="btn btn-primary" type="submit">Run import</button>
+  <a class="btn btn-outline-secondary ms-2" href="{{ url_for('reports.top_sellers_html') }}">Top sellers</a>
+</form>
+
+{% if report %}
+<div class="card shadow-sm">
+  <div class="card-header">Import results</div>
+  <div class="card-body">
+    <ul class="mb-2">
+      <li>Rows read: <strong>{{ report.rows_read }}</strong></li>
+      <li>Created: <strong>{{ report.created }}</strong> · Updated: <strong>{{ report.updated }}</strong> · Errors: <strong>{{ report.errors }}</strong></li>
+      <li>SKUs auto-generated: {{ report.sku_generated_count }}</li>
+      <li>Missing prices: {{ report.missing_prices|length }} · Missing photos: {{ report.missing_photos|length }}</li>
+    </ul>
+    {% if report.missing_prices %}
+      <p class="mb-1"><strong>Missing prices</strong></p>
+      <ul>{% for s in report.missing_prices %}<li><code>{{ s }}</code></li>{% endfor %}</ul>
+    {% endif %}
+    {% if report.missing_photos %}
+      <p class="mb-1"><strong>Missing photos</strong></p>
+      <ul>{% for s in report.missing_photos %}<li><code>{{ s }}</code></li>{% endfor %}</ul>
+    {% endif %}
+    <p class="small text-muted mb-0">Full report under <code>/workspace/incoming/reports/</code></p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

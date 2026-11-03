@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import pytest
 
+from werkzeug.security import generate_password_hash
+
 from app import create_app
 from app.extensions import db
 
@@ -28,6 +30,9 @@ def app(tmp_path):
             "DEFAULT_GST_RATE": 5,
             "INVOICE_PREFIX": "RC",
             "OWNER_EMAIL": "",
+            "ADMIN_PASSWORD_HASH": generate_password_hash("test-admin-pass"),
+            "REPORT_TOKEN": "test-report-token",
+            "SESSION_COOKIE_SECURE": False,
         }
     )
     with application.app_context():

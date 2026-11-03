@@ -156,3 +156,6 @@ pytest -q
 ```
 
 Covers payroll OT math, GST intra/inter totals, same-day dedup merge, WhatsApp dry-run PDF save + log.
+
+## Product import & top-sellers
+See [docs/PRODUCT_IMPORT.md](docs/PRODUCT_IMPORT.md). Admin sign-in gates the CRM; reel agents may read `/reports/top-sellers.json` with `REPORT_TOKEN`.

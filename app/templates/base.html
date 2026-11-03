@@ -24,8 +24,13 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('purchases.list_pos') }}">Purchases</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('attendance.index') }}">Attendance</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('payroll.index') }}">Payroll</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('reports.top_sellers_html') }}">Top sellers</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_products.import_products') }}">Import</a></li>
       </ul>
-      <span class="navbar-text text-white-50 small">GSTIN {{ shop_gstin }}</span>
+      <span class="navbar-text text-white-50 small me-3">GSTIN {{ shop_gstin }}</span>
+      {% if admin_logged_in %}
+      <a class="btn btn-sm btn-outline-light" href="{{ url_for('auth.logout') }}">Sign out</a>
+      {% endif %}
     </div>
   </div>
 </nav>

@@ -1,6 +1,8 @@
 """Flask CLI commands."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 from flask import Flask
 
@@ -56,6 +58,57 @@ def register_cli(app: Flask) -> None:
         """Create all tables (also runs on app start)."""
         from app.extensions import db
         import app.models  # noqa: F401
+        from app.services.schema_migrate import ensure_product_columns
 
         db.create_all()
-        click.echo("Database tables created.")
+        added = ensure_product_columns()
+        click.echo("Database tables created." + (f" Added columns: {added}" if added else ""))
+
+    # --- products group ---
+    @app.cli.group("products")
+    def products_group():
+        """Product catalog import / export."""
+
+    @products_group.command("import")
+    @click.argument("path", type=click.Path(exists=True, path_type=Path))
+    def products_import(path: Path):
+        """Import products from a zip or directory (CSV/XLSX/JSON + photos)."""
+        from app.services.product_import import import_from_path
+        from app.services.top_sellers import export_top_sellers
+
+        report = import_from_path(
+            path,
+            static_root=Path(app.static_folder),
+            extract_root=Path(app.config["INCOMING_EXTRACT_DIR"]),
+            reports_dir=Path(app.config["INCOMING_REPORTS_DIR"]),
+            commit=True,
+        )
+        export_top_sellers(Path(app.config["EXPORTS_DIR"]))
+        click.echo(
+            f"Import complete: read={report.rows_read} created={report.created} "
+            f"updated={report.updated} errors={report.errors} "
+            f"sku_gen={report.sku_generated_count}"
+        )
+        click.echo(f"Missing photos: {len(report.missing_photos)} "
+                   f"Missing prices: {len(report.missing_prices)}")
+        for n in report.notes:
+            if n.startswith("report written:"):
+                click.echo(n)
+
+    @products_group.command("export-top-sellers")
+    @click.option("--limit", default=None, type=int)
+    def products_export_top_sellers(limit):
+        """Write exports/top_sellers.json and .html (no customer data)."""
+        from app.services.top_sellers import export_top_sellers
+
+        jp, hp = export_top_sellers(Path(app.config["EXPORTS_DIR"]), limit=limit)
+        click.echo(f"Wrote {jp}")
+        click.echo(f"Wrote {hp}")
+
+    @products_group.command("ensure-schema")
+    def products_ensure_schema():
+        """Add fabric/colors/image_paths columns if missing."""
+        from app.services.schema_migrate import ensure_product_columns
+
+        added = ensure_product_columns()
+        click.echo("Added: " + (", ".join(added) if added else "(none, already present)"))

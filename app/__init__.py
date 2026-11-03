@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib
 import logging
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -30,7 +31,7 @@ def create_app(config_overrides: dict | None = None) -> Flask:
             "DATABASE_URL", f"sqlite:///{ROOT / 'retail_crm.db'}"
         ),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        SHOP_NAME=os.getenv("SHOP_NAME", "Rabya Collection"),
+        SHOP_NAME=os.getenv("SHOP_NAME", "Rabiyacollections"),
         SHOP_ADDRESS=os.getenv("SHOP_ADDRESS", "Bengaluru, Karnataka, India"),
         SHOP_GSTIN=os.getenv("SHOP_GSTIN", "29AAAAA0000A1Z5"),
         SHOP_PHONE=os.getenv("SHOP_PHONE", "+919876543210"),
@@ -56,6 +57,26 @@ def create_app(config_overrides: dict | None = None) -> Flask:
         PENDING_SEND_DEBOUNCE_MINUTES=int(os.getenv("PENDING_SEND_DEBOUNCE_MINUTES", "30")),
         INVOICES_DIR=str(ROOT / "invoices"),
         SENT_INVOICES_DIR=str(ROOT / "invoices" / "sent"),
+        EXPORTS_DIR=str(ROOT / "exports"),
+        INCOMING_DIR=os.getenv("INCOMING_DIR", "/workspace/incoming"),
+        INCOMING_EXTRACT_DIR=os.getenv(
+            "INCOMING_EXTRACT_DIR", "/workspace/incoming/extracted"
+        ),
+        INCOMING_REPORTS_DIR=os.getenv(
+            "INCOMING_REPORTS_DIR", "/workspace/incoming/reports"
+        ),
+        ADMIN_PASSWORD_HASH=os.getenv("ADMIN_PASSWORD_HASH", ""),
+        REPORT_TOKEN=os.getenv("REPORT_TOKEN", ""),
+        LOGIN_MAX_FAILURES=int(os.getenv("LOGIN_MAX_FAILURES", "5")),
+        LOGIN_LOCKOUT_SECONDS=int(os.getenv("LOGIN_LOCKOUT_SECONDS", "300")),
+        MAX_CONTENT_LENGTH=int(os.getenv("MAX_CONTENT_LENGTH", str(200 * 1024 * 1024))),
+        PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        # Secure cookies when behind HTTPS tunnel / production
+        SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower()
+        in ("1", "true", "yes"),
+        PREFERRED_URL_SCHEME=os.getenv("PREFERRED_URL_SCHEME", "http"),
     )
     if config_overrides:
         flask_app.config.update(config_overrides)
@@ -72,26 +93,38 @@ def create_app(config_overrides: dict | None = None) -> Flask:
 
     Path(flask_app.config["INVOICES_DIR"]).mkdir(parents=True, exist_ok=True)
     Path(flask_app.config["SENT_INVOICES_DIR"]).mkdir(parents=True, exist_ok=True)
+    Path(flask_app.config["EXPORTS_DIR"]).mkdir(parents=True, exist_ok=True)
+    for key in ("INCOMING_DIR", "INCOMING_EXTRACT_DIR", "INCOMING_REPORTS_DIR"):
+        Path(flask_app.config[key]).mkdir(parents=True, exist_ok=True)
+    Path(flask_app.static_folder, "products").mkdir(parents=True, exist_ok=True)
 
     db.init_app(flask_app)
 
     # Register models without binding local name `app`
     importlib.import_module("app.models")
 
+    from app.auth import install_auth_guard
     from app.blueprints import register_blueprints
     from app.cli import register_cli
 
     register_blueprints(flask_app)
     register_cli(flask_app)
+    install_auth_guard(flask_app)
 
     with flask_app.app_context():
         db.create_all()
+        from app.services.schema_migrate import ensure_product_columns
+
+        ensure_product_columns()
 
     @flask_app.context_processor
     def inject_shop():
+        from app.auth import is_logged_in
+
         return {
             "shop_name": flask_app.config["SHOP_NAME"],
             "shop_gstin": flask_app.config["SHOP_GSTIN"],
+            "admin_logged_in": is_logged_in(),
         }
 
     return flask_app
